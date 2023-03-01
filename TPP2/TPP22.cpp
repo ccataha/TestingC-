@@ -1,21 +1,20 @@
 #include <iostream>
 #include <fstream>
-#include <vector>
-#include <string>
 #include <iomanip>
+#include <vector>
 #include <cmath>
 
 using namespace std;
 
-const int PRECISION_ROW = 5;
-const int PRECISION_COL = 5;
+const int PRECISION_ROW = 2;
+const int PRECISION_COL = 2;
 const double K_MAX_ALFA[] = {
-    1.0, 1.0, 1.0, 1.0, 1.0,
-    1.0, 1.0, 1.0, 1.0, 1.0,
-    1.0, 1.0, 1.0, 1.0, 1.0,
-    1.0, 1.0, 1.0, 1.0, 1.0,
-    1.0, 1.0, 1.0, 1.0, 1.0
+    1.148, 1.47, 1.645, 1.96, 2.326, 2.576,
+    2.807, 3.09, 3.291, 3.719, 3.891, 4.417,
+    4.541, 4.891, 5.257, 5.411, 5.594, 5.901,
+    6.055, 6.316
 };
+
 // Функция для вычисления среднего, дисперсии и среднеквадратического отклонения
 void calc_stat(double *data, const size_t n, double &avr, double &disp, double &sko)
 {
@@ -37,77 +36,65 @@ void calc_stat(double *data, const size_t n, double &avr, double &disp, double &
 }
 
 // Функция для вычисления выбросов методом Максимума модуля отклонения
-int metod_MaxAO(double *data, const size_t n, int precision_row, int precision_col, double *KmaxAlfa)
+vector<int> metod_MaxAO(double *data, const size_t n, const double threshold)
 {
-    double avr, sko, disp, maxAbs = 0;
-    int maxindex = 0;
+    double avr, sko, disp;
 
     calc_stat(data, n, avr, disp, sko);
 
+    vector<int> outliers;
     for (size_t h1 = 0; h1 < n; h1++)
     {
         double tmp = abs(data[h1] - avr);
-        if (tmp > maxAbs) { maxAbs = tmp; maxindex = h1; }
+        double tau4 = tmp / sko;
+        if (tau4 > threshold) {
+            outliers.push_back(h1);
+        }
     }
 
-    double tau4 = maxAbs / sko;
-
-    if (KmaxAlfa[precision_row * precision_col] < tau4)
-    {
-        return maxindex;
-    }
-
-    return -1;
+    return outliers;
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
     if (argc != 2) {
         cerr << "Usage: " << argv[0] << " filename.txt" << endl;
         return 1;
     }
 
-    // Открытие файла
     ifstream input(argv[1]);
     if (!input.is_open()) {
         cerr << "Error opening file " << argv[1] << endl;
         return 1;
     }
 
-    // Считывание значений из файла
+    // Считываем значения из файла в вектор data
     vector<double> data;
     double value;
     while (input >> value) {
         data.push_back(value);
     }
-
-    // Закрытие файла
     input.close();
 
-    // Определение выбросов
-    vector<int> outliers;
-    for (size_t i = 0; i < data.size(); i++) {
-        if (metod_MaxAO(&data[0], data.size(), PRECISION_ROW, PRECISION_COL, const_cast<double*>(K_MAX_ALFA)) == i) {
-            outliers.push_back(i);
-        }
-    }
+    // Вычисляем выбросы и сохраняем их индексы в векторе outliers
+    vector<int> outliers = metod_MaxAO(&data[0], data.size(), K_MAX_ALFA[PRECISION_COL]);
 
-    // Вывод результатов
-    cout << "Original data:" << endl;
+    // Печатаем значения входных данных
+    cout << "Input data: ";
     for (size_t i = 0; i < data.size(); i++) {
-        cout << setw(8) << fixed << setprecision(2) << data[i];
-        if ((i + 1) % 10 == 0) {
-            cout << endl;
-        }
-    }
-    if (data.size() % 10 != 0) {
-        cout << endl;
-    }
-    cout << "Outliers:" << endl;
-    for (size_t i = 0; i < outliers.size(); i++) {
-        cout << outliers[i] << " ";
+        cout << data[i] << " ";
     }
     cout << endl;
+
+    // Печатаем индексы всех выбросов
+    if (outliers.empty()) {
+        cout << "No outliers detected." << endl;
+    } else {
+        cout << "Outliers detected at indices: ";
+        for (size_t i = 0; i < outliers.size(); i++) {
+            cout << outliers[i] << " ";
+        }
+        cout << endl;
+    }
 
     return 0;
 }
