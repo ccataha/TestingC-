@@ -77,7 +77,7 @@ int main(int argc, char *argv[]) {
 
     // Вычисляем выбросы и сохраняем их индексы в векторе outliers
     vector<int> outliers = metod_MaxAO(&data[0], data.size(), K_MAX_ALFA[PRECISION_COL]);
-    cout << "Method:" MaxAO;
+    cout << "Method: MaxAO" << endl ;
     // Печатаем значения входных данных
     cout << "Input data: ";
     for (size_t i = 0; i < data.size(); i++) {
